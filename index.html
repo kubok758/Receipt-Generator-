@@ -6,12 +6,11 @@
     <title>Генератор Чеков</title>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
-        /* Базовые настройки */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f0f2f5;
             display: flex;
-            flex-direction: row; /* По умолчанию в ряд */
+            flex-direction: row;
             padding: 20px;
             gap: 20px;
             align-items: flex-start;
@@ -19,7 +18,7 @@
             box-sizing: border-box;
         }
 
-        /* Панель настроек */
+        /* --- Панель настроек --- */
         .controls {
             background: white;
             padding: 20px;
@@ -30,125 +29,109 @@
         }
 
         h2, h3 { margin-top: 0; color: #333; }
-        
         .input-group { margin-bottom: 15px; }
         .input-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; color: #555; }
         
-        /* Стили для инпутов - оптимизация для тача */
         input { 
-            width: 100%; 
-            padding: 12px; 
-            box-sizing: border-box; 
-            border: 1px solid #ddd; 
-            border-radius: 8px; 
-            font-size: 16px; /* 16px чтобы iOS не зумил */
-            outline: none;
-            transition: border-color 0.2s;
+            width: 100%; padding: 12px; box-sizing: border-box; 
+            border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none;
         }
         input:focus { border-color: #007bff; }
 
-        .items-control { 
-            border-top: 2px dashed #eee; 
-            padding-top: 20px; 
-            margin-top: 20px; 
-        }
-
-        /* Кнопки - большие и удобные */
-        .btn {
-            background-color: #007bff; color: white; border: none; 
-            padding: 14px; border-radius: 8px; cursor: pointer; 
-            width: 100%; margin-top: 10px; font-size: 16px; font-weight: 600;
-            box-shadow: 0 2px 4px rgba(0,123,255,0.2);
-            -webkit-tap-highlight-color: transparent;
-        }
-        .btn:active { transform: scale(0.98); }
-        .btn-add { background-color: #28a745; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(40,167,69,0.2); }
+        .items-control { border-top: 2px dashed #eee; padding-top: 20px; margin-top: 20px; }
+        .price-qty-row { display: flex; gap: 10px; }
         
-        /* Список товаров в управлении */
+        .btn {
+            background-color: #007bff; color: white; border: none; padding: 14px; 
+            border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; 
+            font-size: 16px; font-weight: 600;
+        }
+        .btn-add { background-color: #28a745; margin-bottom: 15px; }
+        
         #itemsList .item-preview {
             background: #f8f9fa; padding: 10px; margin-bottom: 8px; 
-            border-radius: 6px; display: flex; justify-content: space-between; 
-            align-items: center; font-size: 14px;
+            border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 14px;
         }
-        .delete-btn { 
-            color: #dc3545; padding: 5px 10px; cursor: pointer; font-weight: bold; font-size: 18px;
-        }
+        .delete-btn { color: #dc3545; padding: 5px 10px; cursor: pointer; font-weight: bold; font-size: 18px; }
 
-        /* Контейнер чека */
+        /* --- ЧЕК --- */
         .receipt-wrapper {
             flex-grow: 1;
             display: flex;
             justify-content: center;
-            background: #e9ecef; /* Серый фон под чеком */
+            background: #e9ecef;
             padding: 20px;
             border-radius: 12px;
-            overflow: auto; /* Прокрутка если не влезает */
+            overflow: auto;
         }
 
         #receipt {
-            width: 380px; /* Фиксированная ширина как у реального чека */
+            width: 380px;
             min-width: 380px;
+            /* Важно: border-box включает padding в общую ширину, чтобы не распирало */
+            box-sizing: border-box; 
             background-color: #fff;
             font-family: 'VT323', monospace;
-            font-size: 20px;
+            font-size: 19px; /* Чуть уменьшил шрифт для надежности */
             line-height: 1.1;
             color: #000;
-            padding: 15px 15px 30px 15px;
+            padding: 15px 12px 30px 12px; /* Чуть меньше отступы по бокам */
             box-shadow: 0 0 15px rgba(0,0,0,0.05);
-            /* Эффект рваного края снизу (визуально) */
             position: relative;
         }
 
         .center { text-align: center; }
-        .right { text-align: right; }
-        .left { text-align: left; }
         .bold { font-weight: bold; }
-        .divider { white-space: nowrap; overflow: hidden; margin: 6px 0; }
-        .item-row { margin-bottom: 6px; }
-        .item-math { text-align: right; }
-
-        #qrcode {
-            display: flex; justify-content: center; margin-top: 20px;
+        
+        /* Разделители: скрывают лишние символы, чтобы не переносились */
+        .divider { 
+            white-space: nowrap; 
+            overflow: hidden; 
+            width: 100%;
+            margin: 5px 0;
+            text-align: center;
         }
-        #qrcode img { margin: 0 auto; }
 
-        /* --- АДАПТИВНОСТЬ ПОД ТЕЛЕФОНЫ --- */
+        /* Товары */
+        .item-row { margin-bottom: 8px; }
+        .item-name { 
+            text-align: left; 
+            word-wrap: break-word;
+        }
+        .item-math { 
+            text-align: right; 
+            margin-top: 2px;
+        }
+
+        /* ИТОГ - Flexbox для разнесения по краям */
+        .total-row {
+            display: flex;
+            justify-content: space-between; /* Текст слева, цена справа */
+            align-items: center;
+            font-weight: bold;
+            font-size: 26px; /* Итог крупнее */
+            margin: 5px 0;
+        }
+
+        /* Оплата */
+        .payment-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #qrcode-container {
+            display: flex; justify-content: center; margin-top: 20px; margin-bottom: 10px;
+        }
+
         @media screen and (max-width: 800px) {
-            body {
-                flex-direction: column; /* Вертикальное расположение */
-                padding: 10px;
-                gap: 15px;
-            }
-
-            .controls {
-                width: 100%; /* На всю ширину */
-                padding: 15px;
-            }
-
-            .receipt-wrapper {
-                width: 100%;
-                padding: 10px 0; /* Меньше отступов */
-                background: transparent;
-                display: block; /* Чтобы работал overflow-x */
-                overflow-x: auto; /* Горизонтальная прокрутка для чека */
-                box-sizing: border-box;
-            }
-
-            #receipt {
-                margin: 0 auto; /* Центрируем чек */
-            }
-
-            /* Улучшаем поля ввода цены и кол-ва */
-            .price-qty-row {
-                display: flex;
-                gap: 10px;
-            }
-            .price-qty-row input {
-                width: 50%;
-            }
+            body { flex-direction: column; padding: 10px; gap: 15px; }
+            .controls { width: 100%; padding: 15px; }
+            .receipt-wrapper { width: 100%; padding: 10px 0; display: block; overflow-x: auto; }
+            #receipt { margin: 0 auto; }
+            .price-qty-row input { width: 50%; }
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
@@ -162,7 +145,8 @@
         </div>
         <div class="input-group">
             <label>ИНН</label>
-            <input type="tel" id="inn" value="0000000000" oninput="renderReceipt()"> </div>
+            <input type="tel" id="inn" value="0000000000" oninput="renderReceipt()">
+        </div>
         <div class="input-group">
             <label>Адрес</label>
             <input type="text" id="address" value="г. Город, ул. Улица, д. 1" oninput="renderReceipt()">
@@ -171,7 +155,7 @@
         <div class="items-control">
             <h3>Товары</h3>
             <div class="input-group">
-                <input type="text" id="newItemName" placeholder="Название товара (напр. Хлеб)">
+                <input type="text" id="newItemName" placeholder="Название товара">
             </div>
             <div class="input-group price-qty-row">
                 <input type="number" id="newItemPrice" placeholder="Цена" inputmode="decimal">
@@ -191,33 +175,43 @@
             <div class="center">ИНН: <span id="r-inn">0000000000</span></div>
             <div class="center" id="r-address">г. Город, ул. Улица, д. 1</div>
             
-            <div class="divider">------------------------------------------</div>
+            <div class="divider">----------------------------------------------------</div>
             <div>Дата: <span id="r-date"></span> Время: <span id="r-time"></span></div>
             <div class="bold">ТОВАРНЫЙ ЧЕК</div>
-            <div class="divider">******************************************</div>
+            
+            <div class="divider">*************************************************************</div>
             
             <div id="r-items"></div>
 
-            <div class="divider">******************************************</div>
-            <div class="right bold" style="font-size: 24px;">ИТОГ: <span id="r-total">0.00</span></div>
-            <div class="left">Оплата: БЕЗНАЛИЧНЫМИ</div>
-            <div class="divider">------------------------------------------</div>
+            <div class="divider">*************************************************************</div>
+            
+            <div class="total-row">
+                <span>ИТОГ:</span>
+                <span id="r-total">0.00₽</span>
+            </div>
+            
+            <div class="payment-row">
+                <span>Оплата:</span>
+                <span>БЕЗНАЛИЧНЫМИ</span>
+            </div>
+
+            <div class="divider">----------------------------------------------------</div>
             <div class="center">Спасибо за покупку!</div>
             
-            <div id="qrcode"></div>
-            <div class="center" style="margin-top: 10px; font-size: 14px;">ФП: 3948274921</div>
+            <div id="qrcode-container">
+                <canvas id="qr-code"></canvas>
+            </div>
         </div>
     </div>
 
     <script>
         let items = [];
-        // Начальный пример
-        items.push({name: "Кофе Латте 0.4", price: 250, qty: 1});
-        items.push({name: "Круассан", price: 150, qty: 2});
+        // Стартовые данные
+        items.push({name: "Товар 1", price: 100, qty: 1});
+        items.push({name: "Товар 2", price: 249.99, qty: 5});
 
         function updateTime() {
             const now = new Date();
-            // Форматируем дату и время
             const dateStr = now.toLocaleDateString('ru-RU');
             const timeStr = now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
             document.getElementById('r-date').innerText = dateStr;
@@ -233,18 +227,14 @@
             const price = parseFloat(priceInput.value) || 0;
             const qty = parseFloat(qtyInput.value) || 1;
 
-            if (price <= 0) {
-                alert("Укажите цену товара!");
-                return;
-            }
+            if (price <= 0) return;
 
             items.push({name, price, qty});
             
-            // Сброс полей
             nameInput.value = '';
             priceInput.value = '';
             qtyInput.value = '1';
-            nameInput.focus(); // Возвращаем фокус на имя товара для быстрого ввода следующего
+            nameInput.focus();
             
             renderReceipt();
         }
@@ -270,16 +260,14 @@
                 const itemTotal = item.price * item.qty;
                 totalSum += itemTotal;
 
-                // Отображение в чеке
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'item-row';
                 itemDiv.innerHTML = `
-                    <div style="word-break: break-all;">${index + 1}. ${item.name}</div>
+                    <div class="item-name">${index + 1}. ${item.name}</div>
                     <div class="item-math">${item.qty} x ${item.price.toFixed(2)} = ${itemTotal.toFixed(2)}</div>
                 `;
                 itemsContainer.appendChild(itemDiv);
 
-                // Отображение в списке для удаления
                 const controlDiv = document.createElement('div');
                 controlDiv.className = 'item-preview';
                 controlDiv.innerHTML = `
@@ -291,30 +279,26 @@
 
             document.getElementById('r-total').innerText = totalSum.toFixed(2) + "₽";
 
-            // Генерация QR
-            const qrContainer = document.getElementById('qrcode');
-            qrContainer.innerHTML = ''; 
-            
+            // QR Code
             const qrText = `Успешная оплата ${totalSum.toFixed(2)}₽. Ждём вас снова!`;
             
-            new QRCode(qrContainer, {
-                text: qrText,
-                width: 140,
-                height: 140,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.L
+            const qr = new QRious({
+              element: document.getElementById('qr-code'),
+              value: qrText,
+              size: 140,
+              level: 'L',
+              background: 'white',
+              foreground: 'black'
             });
         }
 
         function downloadReceipt() {
             const receiptElement = document.getElementById('receipt');
-            // Прокручиваем к чеку перед скачиванием на мобильных
             receiptElement.scrollIntoView({behavior: "smooth"});
 
             setTimeout(() => {
                 html2canvas(receiptElement, {
-                    scale: 3, // Высокое качество
+                    scale: 3,
                     backgroundColor: "#ffffff",
                     logging: false
                 }).then(canvas => {
@@ -331,3 +315,4 @@
     </script>
 </body>
 </html>
+
