@@ -121,10 +121,9 @@
             display: flex; justify-content: center; margin-top: 20px; margin-bottom: 10px;
         }
         
-        /* Исправление для QR внутри div */
         #qr-code img {
             margin: 0 auto;
-            display: block; /* Важно для корректного отображения */
+            display: block; 
         }
 
         @media screen and (max-width: 800px) {
@@ -135,7 +134,8 @@
             .price-qty-row input { width: 50%; }
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/easyqrcodejs/4.6.1/easy.qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
@@ -247,12 +247,6 @@
             renderReceipt();
         }
 
-        // --- ФУНКЦИЯ ДЛЯ ИСПРАВЛЕНИЯ РУССКОГО ТЕКСТА ---
-        // Без этого старая версия qrcodejs ломается на кириллице
-        function makeCodeReadable(str) {
-            return unescape(encodeURIComponent(str));
-        }
-
         function renderReceipt() {
             document.getElementById('r-org').innerText = document.getElementById('orgName').value;
             document.getElementById('r-inn').innerText = document.getElementById('inn').value;
@@ -288,24 +282,20 @@
 
             document.getElementById('r-total').innerText = totalSum.toFixed(2) + "₽";
 
-            // --- ГЕНЕРАЦИЯ QR ---
+            // --- ГЕНЕРАЦИЯ QR (EasyQRCodeJS) ---
             const qrText = `Успешная оплата ${totalSum.toFixed(2)}₽. Ждём вас снова!`;
             
-            document.getElementById("qr-code").innerHTML = ""; // Очистка
+            document.getElementById("qr-code").innerHTML = "";
 
-            try {
-                new QRCode(document.getElementById("qr-code"), {
-                    // Используем функцию makeCodeReadable, чтобы не было краша
-                    text: makeCodeReadable(qrText), 
-                    width: 150,
-                    height: 150,
-                    colorDark : "#000000",
-                    colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.M
-                });
-            } catch (e) {
-                console.error("Ошибка генерации QR:", e);
-            }
+            // Новая библиотека сама определяет UTF-8
+            new QRCode(document.getElementById("qr-code"), {
+                text: qrText,
+                width: 150,
+                height: 150,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.M
+            });
         }
 
         function downloadReceipt() {
@@ -331,4 +321,3 @@
     </script>
 </body>
 </html>
-
