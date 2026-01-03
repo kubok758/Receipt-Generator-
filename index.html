@@ -124,6 +124,7 @@
         /* Исправление для QR внутри div */
         #qr-code img {
             margin: 0 auto;
+            display: block; /* Важно для корректного отображения */
         }
 
         @media screen and (max-width: 800px) {
@@ -209,7 +210,6 @@
 
     <script>
         let items = [];
-        // Стартовые данные
         items.push({name: "Товар 1", price: 100, qty: 1});
         items.push({name: "Товар 2", price: 249.99, qty: 5});
 
@@ -247,6 +247,12 @@
             renderReceipt();
         }
 
+        // --- ФУНКЦИЯ ДЛЯ ИСПРАВЛЕНИЯ РУССКОГО ТЕКСТА ---
+        // Без этого старая версия qrcodejs ломается на кириллице
+        function makeCodeReadable(str) {
+            return unescape(encodeURIComponent(str));
+        }
+
         function renderReceipt() {
             document.getElementById('r-org').innerText = document.getElementById('orgName').value;
             document.getElementById('r-inn').innerText = document.getElementById('inn').value;
@@ -282,28 +288,28 @@
 
             document.getElementById('r-total').innerText = totalSum.toFixed(2) + "₽";
 
-            // --- НОВЫЙ КОД ГЕНЕРАЦИИ QR ---
+            // --- ГЕНЕРАЦИЯ QR ---
             const qrText = `Успешная оплата ${totalSum.toFixed(2)}₽. Ждём вас снова!`;
             
-            // 1. Очищаем контейнер от старого QR-кода
-            document.getElementById("qr-code").innerHTML = "";
+            document.getElementById("qr-code").innerHTML = ""; // Очистка
 
-            // 2. Генерируем новый код
-            new QRCode(document.getElementById("qr-code"), {
-                text: qrText,
-                width: 150,     // Размер
-                height: 150,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.M // Уровень M лучше для читаемости
-            });
-            // ------------------------------
+            try {
+                new QRCode(document.getElementById("qr-code"), {
+                    // Используем функцию makeCodeReadable, чтобы не было краша
+                    text: makeCodeReadable(qrText), 
+                    width: 150,
+                    height: 150,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.M
+                });
+            } catch (e) {
+                console.error("Ошибка генерации QR:", e);
+            }
         }
 
         function downloadReceipt() {
             const receiptElement = document.getElementById('receipt');
-            
-            // Прокрутка нужна, чтобы html2canvas захватил элемент полностью
             receiptElement.scrollIntoView({behavior: "smooth"});
 
             setTimeout(() => {
