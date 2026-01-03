@@ -117,13 +117,21 @@
             justify-content: space-between;
         }
 
+        /* Контейнер QR: добавил min-height чтобы место не исчезало */
         #qrcode-container {
-            display: flex; justify-content: center; margin-top: 20px; margin-bottom: 10px;
+            display: flex; 
+            justify-content: center; 
+            margin-top: 20px; 
+            margin-bottom: 10px;
+            min-height: 150px; /* Резервируем место */
+            align-items: center;
         }
         
         #qr-code img {
-            margin: 0 auto;
+            width: 150px;  /* Принудительный размер */
+            height: 150px;
             display: block; 
+            image-rendering: pixelated; /* Для четкости */
         }
 
         @media screen and (max-width: 800px) {
@@ -135,7 +143,7 @@
         }
     </style>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/easyqrcodejs/4.6.1/easy.qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
@@ -282,20 +290,26 @@
 
             document.getElementById('r-total').innerText = totalSum.toFixed(2) + "₽";
 
-            // --- ГЕНЕРАЦИЯ QR (EasyQRCodeJS) ---
+            // --- ГЕНЕРАЦИЯ QR (Новая библиотека qrcode-generator) ---
             const qrText = `Успешная оплата ${totalSum.toFixed(2)}₽. Ждём вас снова!`;
             
-            document.getElementById("qr-code").innerHTML = "";
+            const qrContainer = document.getElementById("qr-code");
+            qrContainer.innerHTML = ""; // Очистка
 
-            // Новая библиотека сама определяет UTF-8
-            new QRCode(document.getElementById("qr-code"), {
-                text: qrText,
-                width: 150,
-                height: 150,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.M
-            });
+            try {
+                // Тип 0 = автоопределение размера, 'M' = уровень коррекции
+                var qr = qrcode(0, 'M');
+                
+                // Исправление кодировки для русского языка (UTF-8)
+                qr.addData(unescape(encodeURIComponent(qrText)));
+                qr.make();
+                
+                // Генерируем HTML тег картинки с размером модуля 4 (масштабируется CSS)
+                qrContainer.innerHTML = qr.createImgTag(4);
+            } catch (e) {
+                console.error("Ошибка QR:", e);
+                qrContainer.innerText = "Ошибка генерации кода";
+            }
         }
 
         function downloadReceipt() {
