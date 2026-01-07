@@ -4,335 +4,1367 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Генератор Чеков</title>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            flex-direction: row;
-            padding: 20px;
-            gap: 20px;
-            align-items: flex-start;
+        * {
             margin: 0;
+            padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- Панель настроек --- */
-        .controls {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            width: 350px;
-            flex-shrink: 0;
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --receipt-bg: #ffffff;
+            --receipt-border: #bdc3c7;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
-        h2, h3 { margin-top: 0; color: #333; }
-        .input-group { margin-bottom: 15px; }
-        .input-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; color: #555; }
-        
-        input { 
-            width: 100%; padding: 12px; box-sizing: border-box; 
-            border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none;
-        }
-        input:focus { border-color: #007bff; }
-
-        .items-control { border-top: 2px dashed #eee; padding-top: 20px; margin-top: 20px; }
-        .price-qty-row { display: flex; gap: 10px; }
-        
-        .btn {
-            background-color: #007bff; color: white; border: none; padding: 14px; 
-            border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; 
-            font-size: 16px; font-weight: 600;
-        }
-        .btn-add { background-color: #28a745; margin-bottom: 15px; }
-        
-        #itemsList .item-preview {
-            background: #f8f9fa; padding: 10px; margin-bottom: 8px; 
-            border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 14px;
-        }
-        .delete-btn { color: #dc3545; padding: 5px 10px; cursor: pointer; font-weight: bold; font-size: 18px; }
-
-        /* --- ЧЕК --- */
-        .receipt-wrapper {
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            background: #e9ecef;
-            padding: 20px;
-            border-radius: 12px;
-            overflow: auto;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 10px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        #receipt {
-            width: 380px;
-            min-width: 380px;
-            box-sizing: border-box; 
-            background-color: #fff;
-            font-family: 'VT323', monospace;
-            font-size: 19px;
-            line-height: 1.1;
-            color: #000;
-            padding: 15px 12px 30px 12px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.05);
-            position: relative;
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
         }
 
-        .center { text-align: center; }
-        .bold { font-weight: bold; }
-        
-        .divider { 
-            white-space: nowrap; 
-            overflow: hidden; 
-            width: 100%;
-            margin: 5px 0;
+        /* Шапка */
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px 15px;
             text-align: center;
+            position: relative;
+            border-bottom: 5px solid var(--warning);
         }
 
-        /* Товары */
-        .item-row { margin-bottom: 8px; }
-        .item-name { 
-            text-align: left; 
-            word-wrap: break-word;
-        }
-        .item-math { 
-            text-align: right; 
-            margin-top: 2px;
-        }
-
-        /* ИТОГ */
-        .total-row {
+        header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            font-weight: bold;
-            font-size: 26px;
-            margin: 5px 0;
+            justify-content: center;
+            gap: 10px;
         }
 
-        /* Оплата */
-        .payment-row {
+        header h1 i {
+            color: var(--warning);
+        }
+
+        header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Основное содержимое */
+        .main-content {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            padding: 15px;
         }
 
-        /* Контейнер QR: добавил min-height чтобы место не исчезало */
-        #qrcode-container {
-            display: flex; 
-            justify-content: center; 
-            margin-top: 20px; 
-            margin-bottom: 10px;
-            min-height: 150px; /* Резервируем место */
-            align-items: center;
-        }
-        
-        #qr-code img {
-            width: 150px;  /* Принудительный размер */
-            height: 150px;
-            display: block; 
-            image-rendering: pixelated; /* Для четкости */
-        }
-
-        @media screen and (max-width: 800px) {
-            body { flex-direction: column; padding: 10px; gap: 15px; }
-            .controls { width: 100%; padding: 15px; }
-            .receipt-wrapper { width: 100%; padding: 10px 0; display: block; overflow-x: auto; }
-            #receipt { margin: 0 auto; }
-            .price-qty-row input { width: 50%; }
-        }
-    </style>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-</head>
-<body>
-
-    <div class="controls">
-        <h2>🧾 Настройки чека</h2>
-        
-        <div class="input-group">
-            <label>Организация</label>
-            <input type="text" id="orgName" value='ООО "Моя организация"' oninput="renderReceipt()">
-        </div>
-        <div class="input-group">
-            <label>ИНН</label>
-            <input type="tel" id="inn" value="0000000000" oninput="renderReceipt()">
-        </div>
-        <div class="input-group">
-            <label>Адрес</label>
-            <input type="text" id="address" value="г. Город, ул. Улица, д. 1" oninput="renderReceipt()">
-        </div>
-
-        <div class="items-control">
-            <h3>Товары</h3>
-            <div class="input-group">
-                <input type="text" id="newItemName" placeholder="Название товара">
-            </div>
-            <div class="input-group price-qty-row">
-                <input type="number" id="newItemPrice" placeholder="Цена" inputmode="decimal">
-                <input type="number" id="newItemQty" value="1" placeholder="Кол-во" inputmode="numeric">
-            </div>
-            <button class="btn btn-add" onclick="addItem()">+ Добавить товар</button>
-            
-            <div id="itemsList"></div>
-        </div>
-        
-        <button class="btn" style="background-color: #333; margin-top: 20px;" onclick="downloadReceipt()">📥 Скачать чек (JPG)</button>
-    </div>
-
-    <div class="receipt-wrapper">
-        <div id="receipt">
-            <div class="center bold" id="r-org">ООО "Моя организация"</div>
-            <div class="center">ИНН: <span id="r-inn">0000000000</span></div>
-            <div class="center" id="r-address">г. Город, ул. Улица, д. 1</div>
-            
-            <div class="divider">----------------------------------------------------</div>
-            <div>Дата: <span id="r-date"></span> Время: <span id="r-time"></span></div>
-            <div class="bold">ТОВАРНЫЙ ЧЕК</div>
-            
-            <div class="divider">*************************************************************</div>
-            
-            <div id="r-items"></div>
-
-            <div class="divider">*************************************************************</div>
-            
-            <div class="total-row">
-                <span>ИТОГ:</span>
-                <span id="r-total">0.00₽</span>
-            </div>
-            
-            <div class="payment-row">
-                <span>Оплата:</span>
-                <span>БЕЗНАЛИЧНЫМИ</span>
-            </div>
-
-            <div class="divider">----------------------------------------------------</div>
-            <div class="center">Спасибо за покупку!</div>
-            
-            <div id="qrcode-container">
-                <div id="qr-code"></div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let items = [];
-        items.push({name: "Товар 1", price: 100, qty: 1});
-        items.push({name: "Товар 2", price: 249.99, qty: 5});
-
-        function updateTime() {
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('ru-RU');
-            const timeStr = now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
-            document.getElementById('r-date').innerText = dateStr;
-            document.getElementById('r-time').innerText = timeStr;
-        }
-
-        function addItem() {
-            const nameInput = document.getElementById('newItemName');
-            const priceInput = document.getElementById('newItemPrice');
-            const qtyInput = document.getElementById('newItemQty');
-
-            const name = nameInput.value.trim() || "Товар";
-            const price = parseFloat(priceInput.value) || 0;
-            const qty = parseFloat(qtyInput.value) || 1;
-
-            if (price <= 0) return;
-
-            items.push({name, price, qty});
-            
-            nameInput.value = '';
-            priceInput.value = '';
-            qtyInput.value = '1';
-            nameInput.focus();
-            
-            renderReceipt();
-        }
-
-        function deleteItem(index) {
-            items.splice(index, 1);
-            renderReceipt();
-        }
-
-        function renderReceipt() {
-            document.getElementById('r-org').innerText = document.getElementById('orgName').value;
-            document.getElementById('r-inn').innerText = document.getElementById('inn').value;
-            document.getElementById('r-address').innerText = document.getElementById('address').value;
-
-            const itemsContainer = document.getElementById('r-items');
-            const itemsListControl = document.getElementById('itemsList');
-            itemsContainer.innerHTML = '';
-            itemsListControl.innerHTML = '';
-            
-            let totalSum = 0;
-
-            items.forEach((item, index) => {
-                const itemTotal = item.price * item.qty;
-                totalSum += itemTotal;
-
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'item-row';
-                itemDiv.innerHTML = `
-                    <div class="item-name">${index + 1}. ${item.name}</div>
-                    <div class="item-math">${item.qty} x ${item.price.toFixed(2)} = ${itemTotal.toFixed(2)}</div>
-                `;
-                itemsContainer.appendChild(itemDiv);
-
-                const controlDiv = document.createElement('div');
-                controlDiv.className = 'item-preview';
-                controlDiv.innerHTML = `
-                    <div style="flex-grow:1"><b>${item.name}</b><br><span style="color:#666">${item.qty} шт. x ${item.price}₽</span></div>
-                    <div class="delete-btn" onclick="deleteItem(${index})">✕</div>
-                `;
-                itemsListControl.appendChild(controlDiv);
-            });
-
-            document.getElementById('r-total').innerText = totalSum.toFixed(2) + "₽";
-
-            // --- ГЕНЕРАЦИЯ QR (Новая библиотека qrcode-generator) ---
-            const qrText = `Успешная оплата ${totalSum.toFixed(2)}₽. Ждём вас снова!`;
-            
-            const qrContainer = document.getElementById("qr-code");
-            qrContainer.innerHTML = ""; // Очистка
-
-            try {
-                // Тип 0 = автоопределение размера, 'M' = уровень коррекции
-                var qr = qrcode(0, 'M');
-                
-                // Исправление кодировки для русского языка (UTF-8)
-                qr.addData(unescape(encodeURIComponent(qrText)));
-                qr.make();
-                
-                // Генерируем HTML тег картинки с размером модуля 4 (масштабируется CSS)
-                qrContainer.innerHTML = qr.createImgTag(4);
-            } catch (e) {
-                console.error("Ошибка QR:", e);
-                qrContainer.innerText = "Ошибка генерации кода";
+        @media (min-width: 768px) {
+            .main-content {
+                flex-direction: row;
+                gap: 20px;
             }
         }
 
-        function downloadReceipt() {
-            const receiptElement = document.getElementById('receipt');
-            receiptElement.scrollIntoView({behavior: "smooth"});
+        /* Левая панель - настройки */
+        .settings-panel {
+            flex: 1;
+            background: var(--light);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
 
+        @media (min-width: 768px) {
+            .settings-panel {
+                margin-bottom: 0;
+            }
+        }
+
+        .settings-panel h2 {
+            color: var(--primary);
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .settings-panel h2 i {
+            color: var(--secondary);
+        }
+
+        /* Группы настроек */
+        .settings-group {
+            margin-bottom: 25px;
+        }
+
+        .settings-group h3 {
+            color: var(--primary);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid var(--warning);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--secondary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Переключатели */
+        .switch-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--success);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Цветовые пикеры */
+        .color-picker {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .color-picker input {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        /* Правая панель - предпросмотр */
+        .preview-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .preview-header h2 {
+            color: var(--primary);
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .preview-header h2 i {
+            color: var(--warning);
+        }
+
+        /* Контейнер чека */
+        .receipt-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background: linear-gradient(145deg, #f0f0f0, #ffffff);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            overflow: auto;
+            min-height: 500px;
+        }
+
+        .receipt {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            font-family: 'Courier New', monospace;
+            position: relative;
+            border: 1px solid var(--receipt-border);
+        }
+
+        /* Контент чека */
+        .receipt-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px dashed #ddd;
+        }
+
+        .receipt-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .receipt-company {
+            font-size: 0.9rem;
+            margin-bottom: 3px;
+        }
+
+        .receipt-details {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        .receipt-info {
+            margin: 15px 0;
+            padding: 10px 0;
+            border-top: 2px dashed #ddd;
+            border-bottom: 2px dashed #ddd;
+        }
+
+        .receipt-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        /* Таблица товаров */
+        .receipt-items {
+            margin: 20px 0;
+        }
+
+        .receipt-items table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .receipt-items th {
+            text-align: left;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #999;
+            font-weight: bold;
+        }
+
+        .receipt-items td {
+            padding: 6px 0;
+            border-bottom: 1px dashed #eee;
+        }
+
+        .receipt-items td:last-child {
+            text-align: right;
+        }
+
+        .receipt-items .item-total {
+            text-align: right;
+            font-weight: bold;
+        }
+
+        /* Итоги */
+        .receipt-totals {
+            margin: 20px 0;
+            padding-top: 15px;
+            border-top: 2px dashed #ddd;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .total-row.grand-total {
+            font-weight: bold;
+            font-size: 1.1rem;
+            padding-top: 10px;
+            border-top: 2px solid #000;
+            margin-top: 10px;
+        }
+
+        /* QR-код */
+        .receipt-qr {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px dashed #ddd;
+        }
+
+        #qrcode {
+            display: inline-block;
+            margin: 0 auto 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .qr-note {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* Кнопки действий */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--secondary), #2980b9);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #219653);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #c0392b);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning), #e67e22);
+            color: white;
+        }
+
+        /* Управление товарами */
+        .products-management {
+            background: var(--light);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .product-form {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: end;
+        }
+
+        @media (max-width: 768px) {
+            .product-form {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .product-form button {
+                grid-column: span 2;
+            }
+        }
+
+        .products-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border-radius: 10px;
+            background: white;
+            padding: 10px;
+        }
+
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .product-item:last-child {
+            border-bottom: none;
+        }
+
+        .product-info {
+            flex-grow: 1;
+        }
+
+        .product-name {
+            font-weight: 600;
+        }
+
+        .product-details {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9fa;
+            color: var(--dark);
+        }
+
+        .btn-icon:hover {
+            background: var(--secondary);
+            color: white;
+        }
+
+        /* Подвал */
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: var(--primary);
+            color: white;
+            margin-top: 20px;
+            border-top: 5px solid var(--warning);
+        }
+
+        footer p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Мобильная адаптация */
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+            
+            .container {
+                border-radius: 15px;
+            }
+            
+            header {
+                padding: 15px 10px;
+            }
+            
+            header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .settings-panel, .preview-panel {
+                padding: 15px;
+            }
+            
+            .receipt {
+                padding: 20px;
+            }
+            
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn {
+                padding: 16px 20px;
+            }
+        }
+
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Кастомные скроллбары */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--secondary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-receipt"></i> Генератор Чеков</h1>
+            <p>Создавайте и настраивайте кассовые чеки с QR-кодом</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Левая панель - настройки -->
+            <div class="settings-panel">
+                <h2><i class="fas fa-sliders-h"></i> Настройки чека</h2>
+                
+                <!-- Основные данные -->
+                <div class="settings-group">
+                    <h3>Основные данные</h3>
+                    
+                    <div class="form-group">
+                        <label for="companyName">Название компании</label>
+                        <input type="text" id="companyName" value="ООО 'Торговая компания'">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="companyAddress">Адрес компании</label>
+                        <input type="text" id="companyAddress" value="г. Москва, ул. Торговая, д. 15">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="companyPhone">Телефон</label>
+                        <input type="text" id="companyPhone" value="+7 (495) 123-45-67">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="companyEmail">Email</label>
+                        <input type="email" id="companyEmail" value="info@company.ru">
+                    </div>
+                </div>
+                
+                <!-- Реквизиты -->
+                <div class="settings-group">
+                    <h3>Реквизиты</h3>
+                    
+                    <div class="form-group">
+                        <label for="inn">ИНН</label>
+                        <input type="text" id="inn" value="7734567890">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="kpp">КПП</label>
+                        <input type="text" id="kpp" value="773401001">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="okpo">ОКПО</label>
+                        <input type="text" id="okpo" value="12345678">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="paymentAccount">Расчетный счет</label>
+                        <input type="text" id="paymentAccount" value="40702810123456789012">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="bankName">Банк</label>
+                        <input type="text" id="bankName" value="ПАО 'Сбербанк'">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="bik">БИК</label>
+                        <input type="text" id="bik" value="044525225">
+                    </div>
+                </div>
+                
+                <!-- Информация о кассире -->
+                <div class="settings-group">
+                    <h3>Информация о кассире</h3>
+                    
+                    <div class="form-group">
+                        <label for="cashierName">ФИО кассира</label>
+                        <input type="text" id="cashierName" value="Иванова Анна Петровна">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cashierId">ID кассира</label>
+                        <input type="text" id="cashierId" value="K-15432">
+                    </div>
+                </div>
+                
+                <!-- Настройки чека -->
+                <div class="settings-group">
+                    <h3>Настройки чека</h3>
+                    
+                    <div class="form-group">
+                        <label for="receiptNumber">Номер чека</label>
+                        <input type="text" id="receiptNumber" value="15432">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="paymentType">Тип оплаты</label>
+                        <select id="paymentType">
+                            <option value="Наличные">Наличные</option>
+                            <option value="Банковская карта">Банковская карта</option>
+                            <option value="Безналичный расчет">Безналичный расчет</option>
+                            <option value="Онлайн-оплата">Онлайн-оплата</option>
+                        </select>
+                    </div>
+                    
+                    <div class="switch-group">
+                        <label class="switch">
+                            <input type="checkbox" id="showVAT" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <label for="showVAT">Показывать НДС</label>
+                    </div>
+                    
+                    <div class="switch-group">
+                        <label class="switch">
+                            <input type="checkbox" id="showQR" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <label for="showQR">Показывать QR-код</label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="receiptComment">Комментарий к чеку</label>
+                        <textarea id="receiptComment">Спасибо за покупку! Возврат товара в течение 14 дней при наличии чека.</textarea>
+                    </div>
+                </div>
+                
+                <!-- Внешний вид -->
+                <div class="settings-group">
+                    <h3>Внешний вид</h3>
+                    
+                    <div class="form-group">
+                        <label>Цвет заголовка</label>
+                        <div class="color-picker">
+                            <input type="color" id="titleColor" value="#2c3e50">
+                            <span id="titleColorValue">#2c3e50</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Цвет акцентов</label>
+                        <div class="color-picker">
+                            <input type="color" id="accentColor" value="#3498db">
+                            <span id="accentColorValue">#3498db</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fontSize">Размер шрифта</label>
+                        <select id="fontSize">
+                            <option value="small">Маленький</option>
+                            <option value="medium" selected>Средний</option>
+                            <option value="large">Крупный</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Правая панель - предпросмотр -->
+            <div class="preview-panel">
+                <div class="preview-header">
+                    <h2><i class="fas fa-eye"></i> Предпросмотр чека</h2>
+                    <div class="action-buttons">
+                        <button id="saveJPG" class="btn btn-success">
+                            <i class="fas fa-download"></i> Сохранить JPG
+                        </button>
+                        <button id="newReceipt" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Новый чек
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="receipt-container">
+                    <div class="receipt" id="receiptPreview">
+                        <!-- Чек будет отображаться здесь динамически -->
+                    </div>
+                </div>
+                
+                <!-- Управление товарами -->
+                <div class="products-management">
+                    <h3><i class="fas fa-shopping-cart"></i> Управление товарами</h3>
+                    
+                    <div class="product-form">
+                        <div class="form-group">
+                            <label for="productNameInput">Название товара</label>
+                            <input type="text" id="productNameInput" placeholder="Введите название">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="productPriceInput">Цена (₽)</label>
+                            <input type="number" id="productPriceInput" placeholder="0.00" min="0" step="0.01">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="productQuantityInput">Количество</label>
+                            <input type="number" id="productQuantityInput" placeholder="1" min="1" value="1">
+                        </div>
+                        
+                        <button id="addProductBtn" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Добавить
+                        </button>
+                    </div>
+                    
+                    <div class="products-list" id="productsList">
+                        <!-- Список товаров будет здесь -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Генератор Чеков © 2026</p>
+        </footer>
+    </div>
+
+    <script>
+        // Глобальные переменные
+        let products = [
+            { id: 1, name: "Хлеб белый", price: 45.00, quantity: 1 },
+            { id: 2, name: "Молоко 2.5%", price: 85.00, quantity: 2 },
+            { id: 3, name: "Сахар 1кг", price: 65.00, quantity: 1 },
+            { id: 4, name: "Яйца куриные 10шт", price: 120.00, quantity: 1 }
+        ];
+        
+        let currentReceiptId = 15432;
+        
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            init();
+        });
+        
+        function init() {
+            // Инициализация элементов управления
+            initColorPickers();
+            initEventListeners();
+            
+            // Генерация начального чека
+            updateReceiptNumber();
+            updateCurrentDateTime();
+            renderProductsList();
+            generateReceipt();
+            
+            // Инициализация QR-кода
+            updateQRCode();
+        }
+        
+        function initColorPickers() {
+            // Обработчики для цветовых пикеров
+            document.getElementById('titleColor').addEventListener('input', function() {
+                document.getElementById('titleColorValue').textContent = this.value;
+                generateReceipt();
+            });
+            
+            document.getElementById('accentColor').addEventListener('input', function() {
+                document.getElementById('accentColorValue').textContent = this.value;
+                generateReceipt();
+            });
+        }
+        
+        function initEventListeners() {
+            // Основные поля формы
+            const formFields = [
+                'companyName', 'companyAddress', 'companyPhone', 'companyEmail',
+                'inn', 'kpp', 'okpo', 'paymentAccount', 'bankName', 'bik',
+                'cashierName', 'cashierId', 'receiptNumber', 'paymentType',
+                'receiptComment', 'fontSize'
+            ];
+            
+            formFields.forEach(field => {
+                const element = document.getElementById(field);
+                if (element) {
+                    element.addEventListener('input', generateReceipt);
+                    element.addEventListener('change', generateReceipt);
+                }
+            });
+            
+            // Переключатели
+            document.getElementById('showVAT').addEventListener('change', generateReceipt);
+            document.getElementById('showQR').addEventListener('change', generateReceipt);
+            
+            // Кнопки действий
+            document.getElementById('saveJPG').addEventListener('click', saveAsJPG);
+            document.getElementById('newReceipt').addEventListener('click', createNewReceipt);
+            
+            // Управление товарами
+            document.getElementById('addProductBtn').addEventListener('click', addProduct);
+            document.getElementById('productNameInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') addProduct();
+            });
+            
+            // Обновление даты и времени каждую минуту
+            setInterval(updateCurrentDateTime, 60000);
+        }
+        
+        // Обновление текущей даты и времени
+        function updateCurrentDateTime() {
+            const now = new Date();
+            
+            // Форматирование даты
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+            
+            // Форматирование времени
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            const dateString = `${day}.${month}.${year}`;
+            const timeString = `${hours}:${minutes}`;
+            
+            window.currentDate = dateString;
+            window.currentTime = timeString;
+            
+            generateReceipt();
+        }
+        
+        // Обновление номера чека
+        function updateReceiptNumber() {
+            currentReceiptId = Math.floor(Math.random() * 90000) + 10000;
+            document.getElementById('receiptNumber').value = currentReceiptId;
+        }
+        
+        // Генерация чека
+        function generateReceipt() {
+            const receiptElement = document.getElementById('receiptPreview');
+            const showVAT = document.getElementById('showVAT').checked;
+            const showQR = document.getElementById('showQR').checked;
+            const fontSize = document.getElementById('fontSize').value;
+            
+            // Расчет итогов
+            let subtotal = 0;
+            products.forEach(product => {
+                subtotal += product.price * product.quantity;
+            });
+            
+            const vat = subtotal * 0.2; // НДС 20%
+            const total = subtotal;
+            
+            // Получение цветов
+            const titleColor = document.getElementById('titleColor').value;
+            const accentColor = document.getElementById('accentColor').value;
+            
+            // Стили в зависимости от размера шрифта
+            const fontSizeStyles = {
+                small: '0.75rem',
+                medium: '0.85rem',
+                large: '0.95rem'
+            };
+            
+            const baseFontSize = fontSizeStyles[fontSize] || '0.85rem';
+            
+            // Генерация HTML чека
+            receiptElement.innerHTML = `
+                <div class="receipt-header" style="border-bottom-color: ${accentColor}">
+                    <div class="receipt-title" style="color: ${titleColor}">
+                        ${document.getElementById('companyName').value || 'Кассовый чек'}
+                    </div>
+                    <div class="receipt-company" style="font-size: ${baseFontSize}">
+                        ${document.getElementById('companyAddress').value || ''}
+                    </div>
+                    <div class="receipt-details" style="font-size: ${baseFontSize}">
+                        Тел: ${document.getElementById('companyPhone').value || ''}
+                    </div>
+                    <div class="receipt-details" style="font-size: ${baseFontSize}">
+                        Email: ${document.getElementById('companyEmail').value || ''}
+                    </div>
+                </div>
+                
+                <div class="receipt-info" style="font-size: ${baseFontSize}">
+                    <div class="receipt-info-row">
+                        <span>Чек #</span>
+                        <span>${document.getElementById('receiptNumber').value || currentReceiptId}</span>
+                    </div>
+                    <div class="receipt-info-row">
+                        <span>Дата</span>
+                        <span>${window.currentDate || '26.09.2025'}</span>
+                    </div>
+                    <div class="receipt-info-row">
+                        <span>Время</span>
+                        <span>${window.currentTime || '15:30'}</span>
+                    </div>
+                    <div class="receipt-info-row">
+                        <span>Кассир</span>
+                        <span>${document.getElementById('cashierName').value || ''}</span>
+                    </div>
+                    <div class="receipt-info-row">
+                        <span>ID кассира</span>
+                        <span>${document.getElementById('cashierId').value || ''}</span>
+                    </div>
+                    <div class="receipt-info-row">
+                        <span>Тип оплаты</span>
+                        <span>${document.getElementById('paymentType').value || 'Наличные'}</span>
+                    </div>
+                </div>
+                
+                <div class="receipt-items">
+                    <table style="font-size: ${baseFontSize}">
+                        <thead>
+                            <tr>
+                                <th>Товар</th>
+                                <th>Кол-во</th>
+                                <th>Цена</th>
+                                <th>Сумма</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${products.map(product => `
+                                <tr>
+                                    <td>${product.name}</td>
+                                    <td>${product.quantity}</td>
+                                    <td>${product.price.toFixed(2)} ₽</td>
+                                    <td class="item-total">${(product.price * product.quantity).toFixed(2)} ₽</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="receipt-totals" style="font-size: ${baseFontSize}">
+                    <div class="total-row">
+                        <span>Промежуточный итог:</span>
+                        <span>${subtotal.toFixed(2)} ₽</span>
+                    </div>
+                    ${showVAT ? `
+                    <div class="total-row">
+                        <span>НДС 20%:</span>
+                        <span>${vat.toFixed(2)} ₽</span>
+                    </div>
+                    ` : ''}
+                    <div class="total-row grand-total" style="color: ${accentColor}">
+                        <span>ИТОГО К ОПЛАТЕ:</span>
+                        <span>${total.toFixed(2)} ₽</span>
+                    </div>
+                </div>
+                
+                ${showQR ? `
+                <div class="receipt-qr">
+                    <div id="qrcode"></div>
+                    <div class="qr-note" style="font-size: ${baseFontSize}">
+                        Отсканируйте QR-код для подтверждения оплаты
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div class="receipt-footer" style="font-size: ${parseFloat(baseFontSize) * 0.9}rem; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ddd;">
+                    <div>${document.getElementById('receiptComment').value || 'Спасибо за покупку!'}</div>
+                    <div style="margin-top: 10px; color: #666;">
+                        ИНН: ${document.getElementById('inn').value || ''} | 
+                        КПП: ${document.getElementById('kpp').value || ''}
+                    </div>
+                </div>
+            `;
+            
+            // Обновление QR-кода
+            updateQRCode();
+            
+            // Анимация
+            receiptElement.classList.add('fade-in');
             setTimeout(() => {
-                html2canvas(receiptElement, {
-                    scale: 3,
-                    backgroundColor: "#ffffff",
-                    logging: false
-                }).then(canvas => {
+                receiptElement.classList.remove('fade-in');
+            }, 300);
+        }
+        
+        // Обновление QR-кода
+        function updateQRCode() {
+            const total = products.reduce((sum, product) => sum + (product.price * product.quantity), 0);
+            const qrText = `Успешная оплата ${total.toFixed(2)}₽, ждём Вас снова!`;
+            
+            const qrcodeElement = document.getElementById('qrcode');
+            if (qrcodeElement) {
+                qrcodeElement.innerHTML = '';
+                QRCode.toCanvas(qrcodeElement, qrText, {
+                    width: 120,
+                    height: 120,
+                    margin: 1,
+                    color: {
+                        dark: document.getElementById('accentColor').value || '#000000',
+                        light: '#FFFFFF'
+                    }
+                }, function(error) {
+                    if (error) console.error(error);
+                });
+            }
+        }
+        
+        // Добавление товара
+        function addProduct() {
+            const nameInput = document.getElementById('productNameInput');
+            const priceInput = document.getElementById('productPriceInput');
+            const quantityInput = document.getElementById('productQuantityInput');
+            
+            const name = nameInput.value.trim();
+            const price = parseFloat(priceInput.value);
+            const quantity = parseInt(quantityInput.value) || 1;
+            
+            if (!name || isNaN(price) || price <= 0) {
+                alert('Пожалуйста, введите название товара и корректную цену');
+                return;
+            }
+            
+            const newProduct = {
+                id: Date.now(),
+                name: name,
+                price: price,
+                quantity: quantity
+            };
+            
+            products.push(newProduct);
+            
+            // Очистка полей ввода
+            nameInput.value = '';
+            priceInput.value = '';
+            quantityInput.value = '1';
+            
+            // Фокус на поле названия товара
+            nameInput.focus();
+            
+            // Обновление интерфейса
+            renderProductsList();
+            generateReceipt();
+        }
+        
+        // Удаление товара
+        function removeProduct(id) {
+            products = products.filter(product => product.id !== id);
+            renderProductsList();
+            generateReceipt();
+        }
+        
+        // Редактирование товара
+        function editProduct(id) {
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+            
+            const newName = prompt('Введите новое название товара:', product.name);
+            if (newName === null) return;
+            
+            const newPrice = parseFloat(prompt('Введите новую цену товара:', product.price));
+            if (isNaN(newPrice) || newPrice < 0) {
+                alert('Некорректная цена');
+                return;
+            }
+            
+            const newQuantity = parseInt(prompt('Введите новое количество:', product.quantity));
+            if (isNaN(newQuantity) || newQuantity < 1) {
+                alert('Некорректное количество');
+                return;
+            }
+            
+            product.name = newName.trim();
+            product.price = newPrice;
+            product.quantity = newQuantity;
+            
+            renderProductsList();
+            generateReceipt();
+        }
+        
+        // Отображение списка товаров
+        function renderProductsList() {
+            const productsListElement = document.getElementById('productsList');
+            
+            if (products.length === 0) {
+                productsListElement.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #666;">
+                        <i class="fas fa-shopping-cart" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
+                        <p>Товары не добавлены</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            productsListElement.innerHTML = products.map(product => `
+                <div class="product-item">
+                    <div class="product-info">
+                        <div class="product-name">${product.name}</div>
+                        <div class="product-details">
+                            ${product.quantity} × ${product.price.toFixed(2)} ₽ = 
+                            <strong>${(product.price * product.quantity).toFixed(2)} ₽</strong>
+                        </div>
+                    </div>
+                    <div class="product-actions">
+                        <button class="btn-icon" onclick="editProduct(${product.id})" title="Редактировать">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon" onclick="removeProduct(${product.id})" title="Удалить">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Сохранение чека как JPG
+        function saveAsJPG() {
+            // Обновление даты и времени перед сохранением
+            updateCurrentDateTime();
+            
+            // Обновление номера чека перед сохранением
+            const receiptNumberInput = document.getElementById('receiptNumber');
+            if (!receiptNumberInput.value) {
+                updateReceiptNumber();
+            }
+            
+            // Генерация чека перед сохранением
+            generateReceipt();
+            
+            // Небольшая задержка для рендеринга
+            setTimeout(() => {
+                const receiptElement = document.getElementById('receiptPreview');
+                
+                // Настройки для html2canvas
+                const options = {
+                    scale: 3, // Высокое качество
+                    backgroundColor: '#ffffff',
+                    useCORS: true,
+                    logging: false,
+                    allowTaint: true,
+                    foreignObjectRendering: true,
+                    onclone: function(clonedDoc) {
+                        // Убедимся, что QR-код отображается при сохранении
+                        const qrContainer = clonedDoc.querySelector('.receipt-qr');
+                        if (qrContainer) {
+                            qrContainer.style.display = 'block';
+                        }
+                    }
+                };
+                
+                // Создание изображения
+                html2canvas(receiptElement, options).then(canvas => {
+                    // Преобразование canvas в JPG
+                    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                    
+                    // Создание ссылки для скачивания
                     const link = document.createElement('a');
-                    link.download = 'check_' + Date.now() + '.jpg';
-                    link.href = canvas.toDataURL('image/jpeg', 0.95);
+                    const receiptNumber = document.getElementById('receiptNumber').value || currentReceiptId;
+                    const date = window.currentDate || '26.09.2025';
+                    
+                    link.download = `кассовый_чек_${receiptNumber}_${date}.jpg`;
+                    link.href = imgData;
+                    
+                    // Имитация клика для скачивания
+                    document.body.appendChild(link);
                     link.click();
+                    document.body.removeChild(link);
+                    
+                    // Уведомление об успешном сохранении
+                    showNotification('Чек успешно сохранен как JPG!', 'success');
+                }).catch(error => {
+                    console.error('Ошибка при создании изображения:', error);
+                    showNotification('Ошибка при сохранении чека', 'error');
                 });
             }, 500);
         }
-
-        updateTime();
-        renderReceipt();
+        
+        // Создание нового чека
+        function createNewReceipt() {
+            if (confirm('Создать новый чек? Все товары будут удалены.')) {
+                // Сброс товаров
+                products = [];
+                
+                // Генерация нового номера чека
+                updateReceiptNumber();
+                
+                // Обновление даты и времени
+                updateCurrentDateTime();
+                
+                // Обновление интерфейса
+                renderProductsList();
+                generateReceipt();
+                
+                showNotification('Новый чек создан', 'info');
+            }
+        }
+        
+        // Показать уведомление
+        function showNotification(message, type = 'info') {
+            // Создание элемента уведомления
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 10px;
+                color: white;
+                font-weight: 600;
+                z-index: 1000;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                animation: slideIn 0.3s ease-out;
+                max-width: 300px;
+            `;
+            
+            // Цвет в зависимости от типа
+            const colors = {
+                success: '#27ae60',
+                error: '#e74c3c',
+                info: '#3498db',
+                warning: '#f39c12'
+            };
+            
+            notification.style.background = colors[type] || colors.info;
+            
+            // Добавление на страницу
+            document.body.appendChild(notification);
+            
+            // Удаление через 3 секунды
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+            
+            // Добавление CSS анимаций
+            if (!document.querySelector('#notification-styles')) {
+                const style = document.createElement('style');
+                style.id = 'notification-styles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @keyframes slideOut {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(100%); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+        
+        // Экспорт функций в глобальную область видимости
+        window.editProduct = editProduct;
+        window.removeProduct = removeProduct;
     </script>
 </body>
 </html>
-
